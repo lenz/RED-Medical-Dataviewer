@@ -36,7 +36,6 @@ selected_pat = patients[pat_num - 1]
 
 print("\n\nPATIENTENAKTE")
 print("=============")
-#print(selected_pat["name"][0] + ", " + selected_pat["name"][1])
 
 tree = parse_xml(selected_pat["file"])
 root = tree.getroot()
