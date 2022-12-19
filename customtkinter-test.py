@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 from glob import glob
 from xml.etree.ElementTree import parse as parse_xml
 import customtkinter as ctk
+import os
 
 #Hauptfenster erzeugen
 root = ctk.CTk()
@@ -66,7 +67,8 @@ def read_input_fields():
     tree.grid(row=6, column=1)
 
     for f in files:
-        pat_name = f.split("\\")
+        pat_name = f.split(os.sep)
+        print(pat_name)
         pat_name = pat_name[2]
         pat_name = pat_name.split("_")
         pat_name = pat_name[0:2]
