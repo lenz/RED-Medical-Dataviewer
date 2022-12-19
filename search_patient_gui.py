@@ -1,76 +1,22 @@
-import tkinter as tk
-from tkinter import ttk
-from tkinter import *
-from PIL import Image, ImageTk
 from glob import glob
 from xml.etree.ElementTree import parse as parse_xml
+from tkinter.ttk import Treeview, Frame, Scrollbar
+from tkinter import NO, W, CENTER, END, NORMAL, DISABLED
+
 import customtkinter as ctk
 import os
 
-#Hauptfenster erzeugen
-root = ctk.CTk()
 
-#Fenstertitel
-root.title("RED-Medical-Dataviewer")
-
-image = Image.open("image_01.jpg")
-photo = ImageTk.PhotoImage(image)
-
-#Fenstergröße
-root.geometry("800x500")
-root.minsize(width=400, height=250)
-
-#Label, Labeltext
-label1 = ctk.CTkLabel(root, text="Bitte geben Sie den Nachnamen des Patienten ein:")
-label1.grid(row=0, column=0)
-label1.configure(font=ctk.CTkFont(family='Arial', size=12))
-label2 = ctk.CTkLabel(root, text="Bitte geben Sie den Vornamen des Patienten ein:")
-label2.grid(row=1, column=0)
-label2.configure(font=ctk.CTkFont(family='Arial', size=12))
-#label3 = ttk.Label(root, image=photo)
-#label3.grid()
-
-#Entryfields erstellen
-input_field1 = ctk.CTkEntry(root, width=100)
-input_field1.grid(row=0, column=1)
-
-input_field2 = ctk.CTkEntry(root, width=100)
-input_field2.grid(row=1, column=1)
-
-def search_patient():
-    input_field1.get()
-    input_field2.get()
-
-    files = glob("./data/Patientenakten/*/" + input_field1.get() + "*_" + input_field2.get() + "*_*_AW.xml")
-
-    label4 = ctk.CTkLabel(root, text="Ich habe " + str(len(files)) + " Patienten für Sie gefunden:")  
-    label4.grid(row=4, column=1)
-    label4.configure(font=ctk.CTkFont(family='Arial', size=12))
-
-    pat_count = 0
+def search_patient(last_name, first_name):
+    global patients
+    files = glob("./data/Patientenakten/*/" + last_name + "*_" + first_name + "*_*_AW.xml")
     patients = []
-
-    # Tree erstellen
-    tree = ttk.Treeview(root)
-    tree['columns'] = ("Nummer", "Nachname", "Vorname")
-    tree.column("#0", width=0, stretch=NO)
-    tree.column("Nummer", width=60, anchor=CENTER)
-    tree.column("Nachname", width=200, anchor=W)
-    tree.column("Vorname", width=200, anchor=W)
-
-    # Überschriften erstellen
-    tree.heading("#0", text="", anchor=CENTER)
-    tree.heading("Nummer", text="Nummer", anchor=CENTER)
-    tree.heading("Nachname", text="Nachname", anchor=W)
-    tree.heading("Vorname", text="Vorname", anchor=W)       
-    tree.grid(row=6, column=1)
 
     for f in files:
         pat_name = f.split(os.sep)
         pat_name = pat_name[-1]
         pat_name = pat_name.split("_")
         pat_name = pat_name[0:2]
-        pat_count = pat_count + 1
 
         patient = {
             "name": pat_name,
@@ -78,34 +24,96 @@ def search_patient():
         }
         patients.append(patient)
 
-        # Daten einfügen
-        tree.insert(parent= '', index='end', iid=pat_count, values=(pat_count, pat_name[0], pat_name[1]))
+  
+def show_search_results():
+    global patients, root, results_view, input_name, details_box
+    name = input_name.get()
+    
+    if ',' in name:
+        last_name, first_name = name.split(',')
+        last_name = last_name.strip()
+        first_name = first_name.strip()
+    else:
+        last_name = name
+        first_name = ''
 
-    def show_patient(event):
-        pat_num = int(tree.selection()[0])
-        selected_pat = patients[pat_num - 1]
+    print(last_name)
+    print(first_name)
+    
+    search_patient(last_name, first_name)
 
-        label7 = ctk.CTkLabel(root, text="PATIENTENAKTE")  
-        label7.grid(row=9, column=1)
-        label7.configure(font=ctk.CTkFont(family='Arial', size=12))
+    # delete old data
+    for i in results_view.get_children():
+        results_view.delete(i)
 
-        xml_tree = parse_xml(selected_pat["file"])
-        xml_root = xml_tree.getroot()
-        patient_node = xml_root.findall(".//{http://hl7.org/fhir}Patient")
-        patient_details = patient_node[0][2][1].text
+    # insert data
+    for pat_count, patient in enumerate(patients, start=1):
+        results_view.insert(parent= '', index='end', iid=pat_count, values=(pat_count, patient['name'][0], patient['name'][1]))
 
-        textbox = ctk.CTkTextbox(root, width=400, height=150)
-        textbox.grid(row=10, column=1)
+    details_box.configure(state=NORMAL)
+    details_box.delete('1.0', END)
+    details_box.insert('1.0', str(len(patients)) + ' Patienten gefunden')
+    details_box.configure(state=DISABLED)
 
-        for line in patient_details.split("|"):
-            textbox.insert('10.0', line.strip() + '\n') # 10.0 sonst steht zuletzt bearbeitet als erstes da
 
-        textbox.configure(state="disabled")
+def show_patient_details(event):
+    global patients, root, results_view, input_name, details_box
+    pat_num = int(results_view.selection()[0])
+    selected_pat = patients[pat_num - 1]
 
-    tree.bind("<Double-1>", show_patient)
+    xml_tree = parse_xml(selected_pat["file"])
+    xml_root = xml_tree.getroot()
+    patient_node = xml_root.findall(".//{http://hl7.org/fhir}Patient")
+    patient_details = patient_node[0][2][1].text
 
-# Suche Button erstellen
-search_button = ctk.CTkButton(root, text="Suche starten", command=search_patient)
-search_button.grid(row=2, column=1)
+    details_box.configure(state=NORMAL)
+    details_box.delete('1.0', END)
 
-root.mainloop()
+    for line_number, line in enumerate(patient_details.split("|"), start=1):
+        details_box.insert(str(line_number) + '.0' , line.strip() + '\n')
+
+    details_box.configure(state=DISABLED)
+
+
+def main():
+    global patients, root, results_view, input_name, details_box
+
+    #main window
+    root = ctk.CTk()
+    root.title("RED-Medical-Dataviewer")
+    frame = Frame(root)
+    frame.pack(padx=10, pady=10)
+
+    #search
+    input_name = ctk.CTkEntry(frame, width=460)
+    input_name.grid(row=1, column=0, padx=3, pady=10)
+    
+    search_button = ctk.CTkButton(frame, text="Patient suchen", width=200, command=show_search_results)
+    search_button.grid(row=1, column=1, padx=3, pady=10)
+
+    #results
+    results_view = Treeview(frame)
+    results_view['columns'] = ("Nummer", "Nachname", "Vorname")
+    results_view.column("#0", width=0, stretch=NO)
+    results_view.column("Nummer", width=60, anchor=CENTER)
+    results_view.column("Nachname", width=300, anchor=W)
+    results_view.column("Vorname", width=300, anchor=W)
+    results_view.heading("#0", text="", anchor=CENTER)
+    results_view.heading("Nummer", text="Nummer", anchor=CENTER)
+    results_view.heading("Nachname", text="Nachname", anchor=W)
+    results_view.heading("Vorname", text="Vorname", anchor=W)       
+    results_view.grid(row=2, column=0, columnspan=3, sticky="nws")
+    results_view.bind("<Double-1>", show_patient_details)
+
+    result_scrollbar = Scrollbar(frame, orient='vertical', command=results_view.yview)
+    result_scrollbar.grid(row=2, column=1, sticky='nes')
+    results_view.configure(yscrollcommand=result_scrollbar.set)
+    result_scrollbar.configure(command=results_view.yview)
+
+    details_box = ctk.CTkTextbox(frame, height=100)
+    details_box.grid(row=3, column=0, sticky='nsew', padx=3, pady=10, columnspan=3)
+
+    root.mainloop()
+
+#run app
+main()
