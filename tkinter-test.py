@@ -36,8 +36,8 @@ input_field2 = ttk.Entry(root, width=30)
 input_field2.grid(row=1, column=1)
 
 def read_input_fields():
-    current_input1 = input_field1.get()
-    current_input2 = input_field2.get()
+    input_field1.get()
+    input_field2.get()
 
     files = glob("./data/Patientenakten/*/" + input_field1.get() + "*_" + input_field2.get() + "*_*_AW.xml")
 
@@ -48,6 +48,19 @@ def read_input_fields():
     pat_count = 0
     patients = []
 
+    tree = ttk.Treeview(root)
+    tree['columns'] = ("Nummer", "Nachname", "Vorname")
+    tree.column("#0", width=0, stretch=NO)
+    tree.column("Nummer", width=60, anchor=CENTER)
+    tree.column("Nachname", width=200, anchor=W)
+    tree.column("Vorname", width=200, anchor=W)
+
+    # Überschriften erstellen
+    tree.heading("#0", text="", anchor=CENTER)
+    tree.heading("Nummer", text="Nummer", anchor=CENTER)
+    tree.heading("Nachname", text="Nachname", anchor=W)
+    tree.heading("Vorname", text="Vorname", anchor=W)
+       
     for f in files:
         pat_name = f.split("\\")
         pat_name = pat_name[2]
@@ -68,35 +81,51 @@ def read_input_fields():
         #listbox.grid(row=6, column=1)
         #listbox.configure(font=("Arial"), width=50)
 
-        tree = ttk.Treeview(root)
-        tree['columns'] = ("Nummer", "Nachname", "Vorname")
-        tree.column("#0", width=120)
-        tree.column("Nummer", anchor=W)
-        tree.column("Nachname", anchor=CENTER)
-        tree.column("Vorname", anchor=E)
-
-        # Überschriften erstellen
- #       tree.heading("#0", text=)
-        tree.heading("Nummer", text="Nummer", anchor=CENTER)
-        tree.heading("Nachname", text="Nachname", anchor=CENTER)
-        tree.heading("Vorname", text="Vorname", anchor=CENTER)
-       
-        tree.insert(parent= '', index='end', iid=0, text=str(pat_count))
+        # Daten einfügen
+        tree.insert(parent= '', index='end', iid=pat_count, values=(pat_count, pat_name[0], pat_name[1]))
         tree.grid(row=6, column=1)
 
     label6 = ttk.Label(root, text="Bitte geben Sie die Nummer des gewünschten Patienten ein: ")  
     label6.grid(row=7, column=0)
     label6.configure(font=("Arial"))
-    input_field3 = ttk.Entry(root, width=8)
-    input_field3.grid(row=7, column=1)
+    enter_patientnumber = ttk.Entry(root, width=8)
+    enter_patientnumber.grid(row=7, column=1)
 
-    ok_button2 = Button(root, text="OK")
-    ok_button2.grid(row=8, column=1)
+    def read_input_field():
+        enter_patientnumber.get()
+        
+        pat_num = int(enter_patientnumber.get())
+        
+        selected_pat = patients[pat_num - 1]
 
-#pat_num = int(input_field3)
+        # print(selected_pat)
 
-#Button erstellen
-ok_button = Button(root, text="Suche starten", command=read_input_fields)
-ok_button.grid(row=2, column=1)
+        #print("\n\nPATIENTENAKTE")
+        #print("=============")
+        label7 = ttk.Label(root, text="PATIENTENAKTE")  
+        label7.grid(row=9, column=1)
+        label7.configure(font=("Arial"))
+        label8 = ttk.Label(root, text="===============")  
+        label8.grid(row=10, column=1)
+        label8.configure(font=("Arial"))
+
+        tree2 = parse_xml(selected_pat["file"])
+        root2 = tree2.getroot()
+        patient_node = root2.findall(".//{http://hl7.org/fhir}Patient")
+        patient_details = patient_node[0][2][1].text
+
+        for line in patient_details.split("|"):
+            #print(line.strip())
+            label9 = ttk.Label(root, text=line.strip())
+            label9.grid(row=11, column=1)
+            label9.configure(font=("Arial"))
+
+    # OK Button erstellen
+    ok_button = Button(root, text="OK", command=read_input_field)
+    ok_button.grid(row=8, column=1)
+
+# Suche Button erstellen
+search_button = Button(root, text="Suche starten", command=read_input_fields)
+search_button.grid(row=2, column=1)
 
 root.mainloop()
