@@ -48,6 +48,7 @@ def read_input_fields():
     pat_count = 0
     patients = []
 
+    # Tree erstellen
     tree = ttk.Treeview(root)
     tree['columns'] = ("Nummer", "Nachname", "Vorname")
     tree.column("#0", width=0, stretch=NO)
@@ -60,7 +61,9 @@ def read_input_fields():
     tree.heading("Nummer", text="Nummer", anchor=CENTER)
     tree.heading("Nachname", text="Nachname", anchor=W)
     tree.heading("Vorname", text="Vorname", anchor=W)
-       
+    
+    tree.grid(row=6, column=1)
+
     for f in files:
         pat_name = f.split("\\")
         pat_name = pat_name[2]
@@ -74,20 +77,13 @@ def read_input_fields():
         }
         patients.append(patient)
 
-        #print(pat_count, pat_name[0], pat_name[1])
-        
-        #listbox = tk.Listbox(root)
-        #listbox.insert(pat_count, pat_name[0], pat_name[1])
-        #listbox.grid(row=6, column=1)
-        #listbox.configure(font=("Arial"), width=50)
-
         # Daten einfügen
         tree.insert(parent= '', index='end', iid=pat_count, values=(pat_count, pat_name[0], pat_name[1]))
-        tree.grid(row=6, column=1)
 
     label6 = ttk.Label(root, text="Bitte geben Sie die Nummer des gewünschten Patienten ein: ")  
     label6.grid(row=7, column=0)
     label6.configure(font=("Arial"))
+
     enter_patientnumber = ttk.Entry(root, width=8)
     enter_patientnumber.grid(row=7, column=1)
 
@@ -98,27 +94,23 @@ def read_input_fields():
         
         selected_pat = patients[pat_num - 1]
 
-        # print(selected_pat)
-
-        #print("\n\nPATIENTENAKTE")
-        #print("=============")
+        # Label "PATIENTENAKTE" erstellen
         label7 = ttk.Label(root, text="PATIENTENAKTE")  
         label7.grid(row=9, column=1)
         label7.configure(font=("Arial"))
-        label8 = ttk.Label(root, text="===============")  
-        label8.grid(row=10, column=1)
-        label8.configure(font=("Arial"))
 
-        tree2 = parse_xml(selected_pat["file"])
-        root2 = tree2.getroot()
-        patient_node = root2.findall(".//{http://hl7.org/fhir}Patient")
+        xml_tree = parse_xml(selected_pat["file"])
+        xml_root = xml_tree.getroot()
+        patient_node = xml_root.findall(".//{http://hl7.org/fhir}Patient")
         patient_details = patient_node[0][2][1].text
 
+        text = Text(root, width=58, height=10)
+        text.grid(row=10, column=1)
+
         for line in patient_details.split("|"):
-            #print(line.strip())
-            label9 = ttk.Label(root, text=line.strip())
-            label9.grid(row=11, column=1)
-            label9.configure(font=("Arial"))
+            text.insert('10.0', line.strip() + '\n') # 10.0 sonst steht zuletzt bearbeitet als erstes da
+
+        text.configure(state="disabled")
 
     # OK Button erstellen
     ok_button = Button(root, text="OK", command=read_input_field)
