@@ -69,7 +69,7 @@ def read_input_fields():
     for f in files:
         pat_name = f.split(os.sep)
         print(pat_name)
-        pat_name = pat_name[2]
+        pat_name = pat_name[-1]
         pat_name = pat_name.split("_")
         pat_name = pat_name[0:2]
         pat_count = pat_count + 1
