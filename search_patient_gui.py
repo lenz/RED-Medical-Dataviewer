@@ -7,7 +7,7 @@ import customtkinter as ctk
 import os
 
 
-def search_patient(last_name, first_name):
+def search_patients(last_name, first_name):
     global patients
     files = glob("./data/Patientenakten/*/" + last_name + "*_" + first_name + "*_*_AW.xml")
     patients = []
@@ -25,7 +25,7 @@ def search_patient(last_name, first_name):
         patients.append(patient)
 
   
-def show_search_results():
+def show_search_results(event):
     global patients, root, results_view, input_name, details_box
     name = input_name.get()
     
@@ -36,11 +36,8 @@ def show_search_results():
     else:
         last_name = name
         first_name = ''
-
-    print(last_name)
-    print(first_name)
     
-    search_patient(last_name, first_name)
+    search_patients(last_name, first_name)
 
     # delete old data
     for i in results_view.get_children():
@@ -48,10 +45,14 @@ def show_search_results():
 
     # insert data
     for pat_count, patient in enumerate(patients, start=1):
-        results_view.insert(parent= '', index='end', iid=pat_count, values=(pat_count, patient['name'][0], patient['name'][1]))
+        results_view.insert(parent='', index='end', iid=pat_count, 
+                            values=(pat_count, patient['name'][0], patient['name'][1]))
 
+    # clear detail box
     details_box.configure(state=NORMAL)
     details_box.delete('1.0', END)
+
+    # insert new content
     details_box.insert('1.0', str(len(patients)) + ' Patienten gefunden')
     details_box.configure(state=DISABLED)
 
@@ -66,9 +67,11 @@ def show_patient_details(event):
     patient_node = xml_root.findall(".//{http://hl7.org/fhir}Patient")
     patient_details = patient_node[0][2][1].text
 
+    # clear detail box
     details_box.configure(state=NORMAL)
     details_box.delete('1.0', END)
 
+    # insert new content
     for line_number, line in enumerate(patient_details.split("|"), start=1):
         details_box.insert(str(line_number) + '.0' , line.strip() + '\n')
 
@@ -76,22 +79,31 @@ def show_patient_details(event):
 
 
 def main():
-    global patients, root, results_view, input_name, details_box
+    global patients, root, results_view, input_name, details_box, search_button
 
-    #main window
+    # main window
     root = ctk.CTk()
     root.title("RED-Medical-Dataviewer")
     frame = Frame(root)
     frame.pack(padx=10, pady=10)
 
-    #search
+    # search
     input_name = ctk.CTkEntry(frame, width=460)
     input_name.grid(row=1, column=0, padx=3, pady=10)
+    input_name.bind("<Return>", show_search_results)
+
+    def tab_input_name(event):
+        results_view.focus_set(); 
+        results_view.selection_set(0)
+    
+    input_name.bind("<Tab>", tab_input_name)            
+    input_name.focus()
     
     search_button = ctk.CTkButton(frame, text="Patient suchen", width=200, command=show_search_results)
     search_button.grid(row=1, column=1, padx=3, pady=10)
+    
 
-    #results
+    # results
     results_view = Treeview(frame)
     results_view['columns'] = ("Nummer", "Nachname", "Vorname")
     results_view.column("#0", width=0, stretch=NO)
@@ -115,5 +127,5 @@ def main():
 
     root.mainloop()
 
-#run app
+# run app
 main()
