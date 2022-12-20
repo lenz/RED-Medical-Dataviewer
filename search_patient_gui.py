@@ -24,7 +24,7 @@ def search_patients(last_name, first_name):
         }
         patients.append(patient)
 
-  
+
 def show_search_results(event):
     global patients, root, results_view, input_name, details_box
     name = input_name.get()
@@ -93,8 +93,8 @@ def main():
     input_name.bind("<Return>", show_search_results)
 
     def tab_input_name(event):
-        results_view.focus_set(); 
-        results_view.selection_set(0)
+        results_view.selection_set(1)
+        results_view.focus(1)
     
     input_name.bind("<Tab>", tab_input_name)            
     input_name.focus()
@@ -116,6 +116,8 @@ def main():
     results_view.heading("Vorname", text="Vorname", anchor=W)       
     results_view.grid(row=2, column=0, columnspan=3, sticky="nws")
     results_view.bind("<Double-1>", show_patient_details)
+    results_view.bind("<Return>", show_patient_details)
+    results_view.bind("<Tab>", lambda e: input_name.focus())
 
     result_scrollbar = Scrollbar(frame, orient='vertical', command=results_view.yview)
     result_scrollbar.grid(row=2, column=1, sticky='nes')
